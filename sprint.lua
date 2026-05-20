@@ -11,7 +11,9 @@ local function setSpeed(speed)
     local char = player.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = speed end
+        if hum then
+            hum.WalkSpeed = speed
+        end
     end
 end
 
@@ -124,7 +126,7 @@ local speedLabel = Instance.new("TextLabel")
 speedLabel.Size = UDim2.new(1, -24, 0, 14)
 speedLabel.Position = UDim2.new(0, 12, 0, 58)
 speedLabel.BackgroundTransparency = 1
-speedLabel.Text = "Speed: "..walkSpeed.."  |  Hold [L-Ctrl] to sprint"
+speedLabel.Text = "Speed: "..walkSpeed.."  |  Hold [L-Shift] to sprint"
 speedLabel.TextColor3 = Color3.fromRGB(80, 85, 110)
 speedLabel.Font = Enum.Font.Gotham
 speedLabel.TextSize = 11
@@ -136,59 +138,113 @@ local minimized = false
 minBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     local info = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
+
     if minimized then
-        TweenService:Create(main, info, {Size = UDim2.new(0, 200, 0, 34)}):Play()
-        TweenService:Create(body, info, {Size = UDim2.new(1, 0, 0, 0)}):Play()
+        TweenService:Create(main, info, {
+            Size = UDim2.new(0, 200, 0, 34)
+        }):Play()
+
+        TweenService:Create(body, info, {
+            Size = UDim2.new(1, 0, 0, 0)
+        }):Play()
+
         minBtn.Text = "+"
     else
-        TweenService:Create(main, info, {Size = UDim2.new(0, 200, 0, 110)}):Play()
-        TweenService:Create(body, info, {Size = UDim2.new(1, 0, 0, 76)}):Play()
+        TweenService:Create(main, info, {
+            Size = UDim2.new(0, 200, 0, 110)
+        }):Play()
+
+        TweenService:Create(body, info, {
+            Size = UDim2.new(1, 0, 0, 76)
+        }):Play()
+
         minBtn.Text = "—"
     end
 end)
 
 -- Dragging
-local dragging, dragStart, startPos
+local dragging = false
+local dragStart
+local startPos
+
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true dragStart = input.Position startPos = main.Position
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local d = input.Position - dragStart
-        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)
+        local delta = input.Position - dragStart
+
+        main.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
+
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
 end)
 
--- Update GUI
+-- Tween helper
 local function tweenProp(obj, props, t)
-    TweenService:Create(obj, TweenInfo.new(t or 0.18, Enum.EasingStyle.Quad), props):Play()
+    TweenService:Create(
+        obj,
+        TweenInfo.new(t or 0.18, Enum.EasingStyle.Quad),
+        props
+    ):Play()
 end
 
+-- GUI update
 local function updateGUI(isSprinting)
     if isSprinting then
-        tweenProp(statusDot, {BackgroundColor3 = Color3.fromRGB(63, 216, 122)})
-        tweenProp(statusText, {TextColor3 = Color3.fromRGB(63, 216, 122)})
-        tweenProp(barFill, {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(63, 216, 122)})
+        tweenProp(statusDot, {
+            BackgroundColor3 = Color3.fromRGB(63, 216, 122)
+        })
+
+        tweenProp(statusText, {
+            TextColor3 = Color3.fromRGB(63, 216, 122)
+        })
+
+        tweenProp(barFill, {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundColor3 = Color3.fromRGB(63, 216, 122)
+        })
+
         statusText.Text = "Sprinting"
-        speedLabel.Text = "Speed: "..sprintSpeed.."  |  Hold [L-Ctrl] to sprint"
+        speedLabel.Text = "Speed: "..sprintSpeed.."  |  Hold [L-Shift] to sprint"
     else
-        tweenProp(statusDot, {BackgroundColor3 = Color3.fromRGB(224, 85, 85)})
-        tweenProp(statusText, {TextColor3 = Color3.fromRGB(224, 85, 85)})
-        tweenProp(barFill, {Size = UDim2.new(walkSpeed/sprintSpeed, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(224, 85, 85)})
+        tweenProp(statusDot, {
+            BackgroundColor3 = Color3.fromRGB(224, 85, 85)
+        })
+
+        tweenProp(statusText, {
+            TextColor3 = Color3.fromRGB(224, 85, 85)
+        })
+
+        tweenProp(barFill, {
+            Size = UDim2.new(walkSpeed / sprintSpeed, 0, 1, 0),
+            BackgroundColor3 = Color3.fromRGB(224, 85, 85)
+        })
+
         statusText.Text = "Walking"
-        speedLabel.Text = "Speed: "..walkSpeed.."  |  Hold [L-Ctrl] to sprint"
+        speedLabel.Text = "Speed: "..walkSpeed.."  |  Hold [L-Shift] to sprint"
     end
 end
 
 -- Sprint logic
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
-    if input.KeyCode == Enum.KeyCode.LeftControl then
+
+    if input.KeyCode == Enum.KeyCode.LeftShift then
         sprinting = true
         setSpeed(sprintSpeed)
         updateGUI(true)
@@ -196,7 +252,7 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.LeftControl then
+    if input.KeyCode == Enum.KeyCode.LeftShift then
         sprinting = false
         setSpeed(walkSpeed)
         updateGUI(false)
@@ -205,7 +261,12 @@ end)
 
 player.CharacterAdded:Connect(function()
     task.wait(0.1)
-    if sprinting then setSpeed(sprintSpeed) end
+
+    if sprinting then
+        setSpeed(sprintSpeed)
+    else
+        setSpeed(walkSpeed)
+    end
 end)
 
-print("Sprint Pro loaded! Hold Left Ctrl to sprint.")
+print("Sprint Pro loaded! Hold Left Shift to sprint.")
